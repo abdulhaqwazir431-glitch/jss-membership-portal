@@ -108,24 +108,28 @@
       <h3>Membership Application</h3>
 
       <label for="full_name">Full Name *</label>
-      <input id="full_name" maxlength="100" required>
+      <input id="full_name" name="full_name"
+             maxlength="100" autocomplete="name" required>
 
       <label for="father_name">Father's Name *</label>
-      <input id="father_name" maxlength="100" required>
+      <input id="father_name" name="father_name"
+             maxlength="100" required>
 
       <label for="village">Village *</label>
-      <input id="village" maxlength="100" required>
+      <input id="village" name="village"
+             maxlength="100" required>
 
       <label for="phone">Phone / WhatsApp *</label>
-      <input id="phone" type="tel" maxlength="25"
-             autocomplete="tel" required>
+      <input id="phone" name="phone" type="tel"
+             maxlength="25" autocomplete="tel" required>
 
       <label for="email">Email (optional)</label>
-      <input id="email" type="email" maxlength="254"
-             autocomplete="email">
+      <input id="email" name="email" type="email"
+             maxlength="254" autocomplete="email">
 
       <label for="education">Education / Institution *</label>
-      <input id="education" maxlength="150" required>
+      <input id="education" name="education"
+             maxlength="150" required>
 
       <p class="notice">
         By submitting this form, you request JSS to review
@@ -152,11 +156,13 @@
     const form = document.getElementById("registrationForm");
     const message = document.getElementById("message");
     const submitButton = document.getElementById("submitButton");
+    const openFormButton = document.getElementById("openForm");
 
     let client = null;
 
-    document.getElementById("openForm").addEventListener("click", () => {
+    openFormButton.addEventListener("click", () => {
       form.style.display = "block";
+      openFormButton.style.display = "none";
       form.scrollIntoView({ behavior: "smooth" });
     });
 
@@ -164,14 +170,14 @@
       event.preventDefault();
       message.textContent = "";
 
-     if (
-  SUPABASE_PUBLISHABLE_KEY ===
-  "sb_publishable_8ZNlvAzSCooLCmv4GwGkWA_V-vtJl-R"
-) {
-  message.textContent =
-    "Setup incomplete. Add your Supabase publishable key first.";
-  return;
-}
+      if (
+        !SUPABASE_PUBLISHABLE_KEY ||
+        SUPABASE_PUBLISHABLE_KEY === "PASTE_YOUR_PUBLISHABLE_KEY_HERE"
+      ) {
+        message.textContent =
+          "Setup incomplete. Please configure the Supabase publishable key.";
+        return;
+      }
 
       if (!window.supabase) {
         message.textContent =
@@ -205,16 +211,24 @@
           .from("Members")
           .insert([application]);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Supabase submission error:", error);
+          throw error;
+        }
 
         message.textContent =
           "Application submitted successfully. It is pending JSS approval.";
 
         form.reset();
+        form.style.display = "none";
+        openFormButton.style.display = "block";
+
       } catch (error) {
         console.error("Submission error:", error);
+
         message.textContent =
-          "Application could not be submitted. Please contact JSS administration.";
+          "Application could not be submitted. Please check your connection or contact JSS administration.";
+
       } finally {
         submitButton.disabled = false;
         submitButton.textContent = "Submit Application";
