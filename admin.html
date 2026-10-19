@@ -149,7 +149,6 @@
         "id, full_name, father_name, village, phone, email, education, created_at, status, membership_number"
       )
       .eq("status", "pending")
-      .order("created_at", { ascending: true });
 
     if (error) {
       showMessage("Could not load applications: " + error.message);
