@@ -223,16 +223,23 @@
         form.style.display = "none";
         openFormButton.style.display = "block";
 
-      } catch (error) {
-        console.error("Submission error:", error);
+    } catch (error) {
+  console.error("Submission error:", error);
 
-        message.textContent =
-          "Application could not be submitted. Please check your connection or contact JSS administration.";
+  const details = [
+    error.message,
+    error.code ? "Code: " + error.code : "",
+    error.details || "",
+    error.hint ? "Hint: " + error.hint : ""
+  ].filter(Boolean);
 
-      } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = "Submit Application";
-      }
+  message.textContent =
+    "Submission failed: " + details.join(" | ");
+
+} finally {
+  submitButton.disabled = false;
+  submitButton.textContent = "Submit Application";
+}
     });
   </script>
 </body>
