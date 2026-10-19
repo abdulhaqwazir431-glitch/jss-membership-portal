@@ -1,64 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JSS Membership Portal</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f0f4f8;
-            margin: 0;
-            padding: 30px 15px;
-            text-align: center;
-        }
-        .container {
-            max-width: 500px;
-            margin: auto;
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px #0001;
-        }
-        h1 { color: #12345a; }
-        p { color: #555; line-height: 1.6; }
-        .notice {
-            background: #fff5d9;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-        button {
-            background: #12345a;
-            color: white;
-            border: none;
-            padding: 13px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSS Membership Portal</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 30px 15px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px #0001;
+    }
+
+    h1, h2 {
+      color: #12345a;
+      text-align: center;
+    }
+
+    p {
+      color: #555;
+      line-height: 1.6;
+    }
+
+    .notice {
+      background: #fff5d9;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      color: #12345a;
+      font-weight: bold;
+    }
+
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      border: 1px solid #ccd3dc;
+      border-radius: 7px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      background: #12345a;
+      color: white;
+      border: none;
+      padding: 13px;
+      margin-top: 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #registrationForm {
+      display: none;
+    }
+
+    #message {
+      overflow-wrap: anywhere;
+    }
+  </style>
 </head>
+
 <body>
-    <div class="container">
-        <h1>JANIKHEL STUDENTS SOCIETY</h1>
-        <h2>Digital Membership Portal</h2>
+  <div class="container">
+    <h1>JANIKHEL STUDENTS SOCIETY</h1>
+    <h2>Digital Membership Portal</h2>
 
-        <p>
-            Welcome to the official digital membership
-            portal of Janikhel Students Society (JSS).
-        </p>
+    <p>
+      Welcome to the official digital membership
+      portal of Janikhel Students Society (JSS).
+    </p>
 
-        <div class="notice">
-            Membership applications are subject to
-            verification and approval by JSS administration.
-        </div>
-
-        <p>Our mission: Education, Unity and Service.</p>
-
-        <button onclick="alert('Membership registration will be available soon!')">
-            Membership Registration
-        </button>
+    <div class="notice">
+      All membership applications are subject to
+      verification and approval by JSS administration.
     </div>
+
+    <p>Our mission: Education, Unity and Service.</p>
+
+    <button id="openForm" type="button">
+      Membership Registration
+    </button>
+
+    <form id="registrationForm">
+      <h3>Membership Application</h3>
+
+      <label for="full_name">Full Name *</label>
+      <input id="full_name" maxlength="100" required>
+
+      <label for="father_name">Father's Name *</label>
+      <input id="father_name" maxlength="100" required>
+
+      <label for="village">Village *</label>
+      <input id="village" maxlength="100" required>
+
+      <label for="phone">Phone / WhatsApp *</label>
+      <input id="phone" type="tel" maxlength="25"
+             autocomplete="tel" required>
+
+      <label for="email">Email (optional)</label>
+      <input id="email" type="email" maxlength="254"
+             autocomplete="email">
+
+      <label for="education">Education / Institution *</label>
+      <input id="education" maxlength="150" required>
+
+      <p class="notice">
+        By submitting this form, you request JSS to review
+        your membership application. Approval is not automatic.
+      </p>
+
+      <button id="submitButton" type="submit">
+        Submit Application
+      </button>
+    </form>
+
+    <p id="message" role="status" aria-live="polite"></p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL =
+      "https://irxaejcuwrpjithegxhy.supabase.co";
+
+    const SUPABASE_PUBLISHABLE_KEY =
+      "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
+
+    const form = document.getElementById("registrationForm");
+    const message = document.getElementById("message");
+    const submitButton = document.getElementById("submitButton");
+
+    let client = null;
+
+    document.getElementById("openForm").addEventListener("click", () => {
+      form.style.display = "block";
+      form.scrollIntoView({ behavior: "smooth" });
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      message.textContent = "";
+
+      if (
+        SUPABASE_PUBLISHABLE_KEY ===
+        "sb_publishable_8ZNlvAzSCooLCmv4GwGkWA_V-vtJl-R"
+      ) {
+        message.textContent =
+          "Setup incomplete. Add your Supabase publishable key first.";
+        return;
+      }
+
+      if (!window.supabase) {
+        message.textContent =
+          "Connection library failed to load. Please try again later.";
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = "Submitting...";
+
+      try {
+        if (!client) {
+          client = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_PUBLISHABLE_KEY
+          );
+        }
+
+        const application = {
+          full_name: document.getElementById("full_name").value.trim(),
+          father_name: document.getElementById("father_name").value.trim(),
+          village: document.getElementById("village").value.trim(),
+          phone: document.getElementById("phone").value.trim(),
+          email: document.getElementById("email").value.trim() || null,
+          education: document.getElementById("education").value.trim(),
+          status: "pending",
+          membership_number: null
+        };
+
+        const { error } = await client
+          .from("Members")
+          .insert([application]);
+
+        if (error) throw error;
+
+        message.textContent =
+          "Application submitted successfully. It is pending JSS approval.";
+
+        form.reset();
+      } catch (error) {
+        console.error("Submission error:", error);
+        message.textContent =
+          "Application could not be submitted. Please contact JSS administration.";
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Submit Application";
+      }
+    });
+  </script>
 </body>
 </html>
