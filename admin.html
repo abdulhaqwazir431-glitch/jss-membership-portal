@@ -1,48 +1,64 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JSS Admin Login</title>
+  <title>JSS Admin Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f0f4f8;
       margin: 0;
-      padding: 30px 16px;
+      padding: 20px;
+      color: #1f2937;
     }
-    .box {
-      max-width: 400px;
-      margin: 50px auto;
-      padding: 25px;
+    .container {
+      max-width: 1000px;
+      margin: auto;
+    }
+    .panel {
       background: white;
+      padding: 20px;
+      margin-bottom: 20px;
       border-radius: 12px;
-      box-shadow: 0 4px 15px #0001;
+      box-shadow: 0 3px 12px #0001;
     }
-    h2 { text-align: center; color: #14532d; }
+    h1, h2 { color: #14532d; }
     input, button {
       box-sizing: border-box;
-      width: 100%;
       padding: 12px;
-      margin-top: 12px;
+      margin: 6px 0;
       border-radius: 6px;
     }
-    input { border: 1px solid #ccc; }
+    input { width: 100%; border: 1px solid #ccc; }
     button {
-      background: #166534;
-      color: white;
       border: 0;
       cursor: pointer;
+      background: #166534;
+      color: white;
     }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    .reject { background: #b91c1c; }
+    .secondary { background: #475569; }
+    .hidden { display: none; }
+    .application {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 12px 0;
+      overflow-wrap: anywhere;
+    }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
     #message { overflow-wrap: anywhere; }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h2>JSS Admin Portal</h2>
-    <p>Authorized administrators only.</p>
+<div class="container">
+  <div class="panel">
+    <h1>Janikhel Students Society</h1>
+    <h2>Admin Portal</h2>
+    <p id="message" role="status">Please sign in.</p>
 
     <form id="loginForm">
       <input id="email" type="email"
@@ -52,55 +68,233 @@
       <button type="submit">Login</button>
     </form>
 
-    <p id="message" role="status"></p>
+    <button id="logoutBtn" class="secondary hidden">
+      Logout
+    </button>
   </div>
 
-  <script>
-    const SUPABASE_URL =
-      "https://irxaejcuwrpjithegxhy.supabase.co";
+  <section id="dashboard" class="panel hidden">
+    <h2>Membership Applications</h2>
+    <button id="refreshBtn" class="secondary">
+      Refresh Applications
+    </button>
+    <div id="applications"></div>
+  </section>
+</div>
 
-    const SUPABASE_PUBLISHABLE_KEY =
-      "sb_publishable_8ZNlvAzSCooLCmv4GwGkWA_V-vtJl-R";
+<script>
+  const SUPABASE_URL =
+    "https://irxaejcuwrpjithegxhy.supabase.co";
 
-    const db = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_PUBLISHABLE_KEY
-    );
+  // Use the same publishable key as your index.html.
+  const SUPABASE_PUBLISHABLE_KEY =
+    "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
 
-    document.getElementById("loginForm")
-      .addEventListener("submit", async function(event) {
-        event.preventDefault();
+  const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
 
-        const message = document.getElementById("message");
-        message.textContent = "Signing in...";
+  const message = document.getElementById("message");
+  const loginForm = document.getElementById("loginForm");
+  const dashboard = document.getElementById("dashboard");
+  const applications = document.getElementById("applications");
+  const logoutBtn = document.getElementById("logoutBtn");
 
-        const { data, error } = await db.auth.signInWithPassword({
-          email: document.getElementById("email").value.trim(),
-          password: document.getElementById("password").value
-        });
+  function showMessage(text) {
+    message.textContent = text;
+  }
 
-        if (error) {
-          message.textContent = "Login failed: " + error.message;
+  function showDashboard() {
+    loginForm.classList.add("hidden");
+    logoutBtn.classList.remove("hidden");
+    dashboard.classList.remove("hidden");
+  }
+
+  function addText(parent, tag, text) {
+    const element = document.createElement(tag);
+    element.textContent = text;
+    parent.appendChild(element);
+    return element;
+  }
+
+  async function verifyAdmin() {
+    const { data: sessionData } = await db.auth.getSession();
+    const user = sessionData.session?.user;
+
+    if (!user) return false;
+
+    const { data, error } = await db
+      .from("jss_admins")
+      .select("active")
+      .eq("user_id", user.id)
+      .eq("active", true)
+      .maybeSingle();
+
+    if (error || !data) {
+      await db.auth.signOut();
+      return false;
+    }
+
+    return true;
+  }
+
+  async function loadApplications() {
+    applications.replaceChildren();
+    showMessage("Loading applications...");
+
+    const { data, error } = await db
+      .from("Members")
+      .select(
+        "id, full_name, father_name, village, phone, email, education, created_at, status, membership_number"
+      )
+      .eq("status", "pending")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      showMessage("Could not load applications: " + error.message);
+      return;
+    }
+
+    showMessage("Pending applications: " + data.length);
+
+    if (data.length === 0) {
+      addText(applications, "p", "No pending applications.");
+      return;
+    }
+
+    for (const member of data) {
+      const card = document.createElement("article");
+      card.className = "application";
+
+      addText(card, "h3", member.full_name || "Unnamed applicant");
+      addText(card, "p", "Father: " + (member.father_name || "—"));
+      addText(card, "p", "Village: " + (member.village || "—"));
+      addText(card, "p", "Phone: " + (member.phone || "—"));
+      addText(card, "p", "Email: " + (member.email || "—"));
+      addText(card, "p", "Education: " + (member.education || "—"));
+      addText(
+        card,
+        "p",
+        "Applied: " + new Date(member.created_at).toLocaleString()
+      );
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const approveBtn = document.createElement("button");
+      approveBtn.textContent = "Approve";
+      approveBtn.addEventListener("click", async () => {
+        if (!confirm("Approve this application and assign a membership number?")) {
           return;
         }
 
-        const { data: admin, error: adminError } = await db
-          .from("jss_admins")
-          .select("active")
-          .eq("user_id", data.user.id)
-          .eq("active", true)
-          .maybeSingle();
+        approveBtn.disabled = true;
+        showMessage("Approving application...");
 
-        if (adminError || !admin) {
-          await db.auth.signOut();
-          message.textContent =
-            "Access denied. This account is not an active JSS admin.";
+        const { data: number, error: approvalError } = await db.rpc(
+          "jss_approve_member",
+          { p_member_id: member.id }
+        );
+
+        if (approvalError) {
+          showMessage("Approval failed: " + approvalError.message);
+          approveBtn.disabled = false;
           return;
         }
 
-        message.textContent =
-          "Admin login successful! Dashboard is ready for the next step.";
+        showMessage("Approved successfully. Membership number: " + number);
+        await loadApplications();
       });
-  </script>
+
+      const rejectBtn = document.createElement("button");
+      rejectBtn.textContent = "Reject";
+      rejectBtn.className = "reject";
+
+      rejectBtn.addEventListener("click", async () => {
+        if (!confirm("Are you sure you want to reject this application?")) {
+          return;
+        }
+
+        rejectBtn.disabled = true;
+        showMessage("Rejecting application...");
+
+        const { data: rejected, error: rejectError } = await db
+          .from("Members")
+          .update({
+            status: "rejected",
+            membership_number: null
+          })
+          .eq("id", member.id)
+          .eq("status", "pending")
+          .select("id");
+
+        if (rejectError) {
+          showMessage("Rejection failed: " + rejectError.message);
+          rejectBtn.disabled = false;
+          return;
+        }
+
+        if (!rejected || rejected.length === 0) {
+          showMessage("Application was not changed. Refresh and try again.");
+          rejectBtn.disabled = false;
+          return;
+        }
+
+        showMessage("Application rejected.");
+        await loadApplications();
+      });
+
+      actions.append(approveBtn, rejectBtn);
+      card.appendChild(actions);
+      applications.appendChild(card);
+    }
+  }
+
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    showMessage("Signing in...");
+
+    const { error } = await db.auth.signInWithPassword({
+      email: document.getElementById("email").value.trim(),
+      password: document.getElementById("password").value
+    });
+
+    if (error) {
+      showMessage("Login failed: " + error.message);
+      return;
+    }
+
+    if (!(await verifyAdmin())) {
+      showMessage("Access denied. Active JSS admin account required.");
+      return;
+    }
+
+    showDashboard();
+    await loadApplications();
+  });
+
+  document.getElementById("refreshBtn").addEventListener(
+    "click", loadApplications
+  );
+
+  logoutBtn.addEventListener("click", async () => {
+    await db.auth.signOut();
+    dashboard.classList.add("hidden");
+    loginForm.classList.remove("hidden");
+    logoutBtn.classList.add("hidden");
+    applications.replaceChildren();
+    showMessage("You have logged out.");
+  });
+
+  // Restore an existing valid session if available.
+  (async () => {
+    const { data } = await db.auth.getSession();
+    if (data.session && await verifyAdmin()) {
+      showDashboard();
+      await loadApplications();
+    }
+  })();
+</script>
 </body>
 </html>
