@@ -1,0 +1,208 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JSS Membership Verification</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px 15px;
+      font-family: Arial, sans-serif;
+      background: #eef3f2;
+      color: #18352e;
+    }
+
+    .box {
+      max-width: 520px;
+      margin: 30px auto;
+      padding: 26px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 5px 22px #00000012;
+    }
+
+    h1 { color: #14532d; font-size: 24px; }
+    p { line-height: 1.6; overflow-wrap: anywhere; }
+
+    input, button {
+      width: 100%;
+      padding: 13px;
+      margin-top: 10px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    input { border: 1px solid #cbd5d1; }
+    button {
+      border: 0;
+      background: #166534;
+      color: white;
+      cursor: pointer;
+    }
+
+    .result {
+      margin-top: 22px;
+      padding: 18px;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .valid { color: #166534; font-weight: bold; }
+    .invalid { color: #b91c1c; font-weight: bold; }
+    .label { color: #64748b; font-size: 12px; margin-top: 14px; }
+    .value { font-weight: bold; margin-top: 3px; }
+    .hidden { display: none; }
+    .back { color: #166534; }
+  </style>
+</head>
+<body>
+  <main class="box">
+    <h1>Janikhel Students Society</h1>
+    <h2>Membership Verification</h2>
+    <p>Verify an official JSS membership number below.</p>
+
+    <form id="verifyForm">
+      <input
+        id="membershipNumber"
+        type="text"
+        placeholder="Example: JSS-2026-0001"
+        autocomplete="off"
+        required
+      >
+      <button id="verifyButton" type="submit">
+        Verify Membership
+      </button>
+    </form>
+
+    <div id="result" class="result hidden" role="status"
+         aria-live="polite"></div>
+
+    <p>
+      <a class="back" href="index.html">JSS Membership Portal</a>
+    </p>
+  </main>
+
+  <script>
+    const SUPABASE_URL =
+      "https://irxaejcuwrpjithegxhy.supabase.co";
+
+    const SUPABASE_PUBLISHABLE_KEY =
+      "sb_publishable_8ZNlvAzSCooLCmv4GwGkWA_V-vtJl-R";
+
+    const db = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
+      }
+    );
+
+    const form = document.getElementById("verifyForm");
+    const input = document.getElementById("membershipNumber");
+    const result = document.getElementById("result");
+    const button = document.getElementById("verifyButton");
+
+    function showMessage(message, className = "") {
+      result.replaceChildren();
+      result.className = "result";
+      const p = document.createElement("p");
+      p.className = className;
+      p.textContent = message;
+      result.appendChild(p);
+      result.classList.remove("hidden");
+    }
+
+    function addField(label, value) {
+      const labelElement = document.createElement("div");
+      labelElement.className = "label";
+      labelElement.textContent = label;
+
+      const valueElement = document.createElement("div");
+      valueElement.className = "value";
+      valueElement.textContent = value || "—";
+
+      result.append(labelElement, valueElement);
+    }
+
+    async function verifyNumber(number) {
+      if (!number) {
+        showMessage("Please enter a membership number.", "invalid");
+        return;
+      }
+
+      button.disabled = true;
+      showMessage("Checking membership...");
+
+      try {
+        const { data, error } = await db.rpc(
+          "verify_jss_membership",
+          { p_membership_number: number }
+        );
+
+        if (error) {
+          console.error("Verification error:", error);
+          showMessage(
+            "Verification service is temporarily unavailable. Please try again later.",
+            "invalid"
+          );
+          return;
+        }
+
+        const member = Array.isArray(data) ? data[0] : data;
+
+        if (!member || member.status?.toLowerCase() !== "approved") {
+          showMessage(
+            "NOT VERIFIED — No approved membership record was found.",
+            "invalid"
+          );
+          return;
+        }
+
+        result.replaceChildren();
+        result.className = "result";
+        result.classList.remove("hidden");
+
+        const heading = document.createElement("p");
+        heading.className = "valid";
+        heading.textContent = "✓ VERIFIED JSS MEMBER";
+        result.appendChild(heading);
+
+        addField("MEMBER NAME", member.full_name);
+        addField("VILLAGE", member.village);
+        addField("MEMBERSHIP NUMBER", member.membership_number);
+        addField("STATUS", "APPROVED");
+      } catch (err) {
+        console.error(err);
+        showMessage(
+          "Could not connect. Please check your internet and try again.",
+          "invalid"
+        );
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await verifyNumber(input.value.trim());
+    });
+
+    const numberFromQR =
+      new URLSearchParams(window.location.search).get("number");
+
+    if (numberFromQR) {
+      input.value = numberFromQR;
+      verifyNumber(numberFromQR.trim());
+    }
+  </script>
+</body>
+</html>
