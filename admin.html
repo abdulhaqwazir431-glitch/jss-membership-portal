@@ -1,10 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>JSS Admin Dashboard</title>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -13,10 +16,12 @@
       padding: 20px;
       color: #1f2937;
     }
+
     .container {
       max-width: 1000px;
       margin: auto;
     }
+
     .panel {
       background: white;
       padding: 20px;
@@ -24,24 +29,47 @@
       border-radius: 12px;
       box-shadow: 0 3px 12px #0001;
     }
-    h1, h2 { color: #14532d; }
+
+    h1, h2 {
+      color: #14532d;
+    }
+
     input, button {
       box-sizing: border-box;
       padding: 12px;
       margin: 6px 0;
       border-radius: 6px;
     }
-    input { width: 100%; border: 1px solid #ccc; }
+
+    input {
+      width: 100%;
+      border: 1px solid #ccc;
+    }
+
     button {
       border: 0;
       cursor: pointer;
       background: #166534;
       color: white;
     }
-    button:disabled { opacity: 0.6; cursor: wait; }
-    .reject { background: #b91c1c; }
-    .secondary { background: #475569; }
-    .hidden { display: none; }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .reject {
+      background: #b91c1c;
+    }
+
+    .secondary {
+      background: #475569;
+    }
+
+    .hidden {
+      display: none;
+    }
+
     .application {
       border: 1px solid #ddd;
       border-radius: 8px;
@@ -49,44 +77,71 @@
       margin: 12px 0;
       overflow-wrap: anywhere;
     }
-    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    #message { overflow-wrap: anywhere; }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #message {
+      overflow-wrap: anywhere;
+    }
   </style>
 </head>
+
 <body>
 <div class="container">
+
   <div class="panel">
     <h1>Janikhel Students Society</h1>
     <h2>Admin Portal</h2>
-    <p id="message" role="status">Please sign in.</p>
+
+    <p id="message" role="status" aria-live="polite">
+      Please sign in.
+    </p>
 
     <form id="loginForm">
-      <input id="email" type="email"
-        placeholder="Admin email" required>
-      <input id="password" type="password"
-        placeholder="Password" required>
+      <input
+        id="email"
+        type="email"
+        placeholder="Admin email"
+        autocomplete="username"
+        required
+      >
+
+      <input
+        id="password"
+        type="password"
+        placeholder="Password"
+        autocomplete="current-password"
+        required
+      >
+
       <button type="submit">Login</button>
     </form>
 
-    <button id="logoutBtn" class="secondary hidden">
+    <button id="logoutBtn" class="secondary hidden" type="button">
       Logout
     </button>
   </div>
 
   <section id="dashboard" class="panel hidden">
     <h2>Membership Applications</h2>
-    <button id="refreshBtn" class="secondary">
+
+    <button id="refreshBtn" class="secondary" type="button">
       Refresh Applications
     </button>
+
     <div id="applications"></div>
   </section>
+
 </div>
 
 <script>
   const SUPABASE_URL =
     "https://irxaejcuwrpjithegxhy.supabase.co";
 
-  // Use the same publishable key as your index.html.
   const SUPABASE_PUBLISHABLE_KEY =
     "sb_publishable_8ZNlvAzSCooLCmv4GwGkWA_V-vtJl-R";
 
@@ -100,6 +155,7 @@
   const dashboard = document.getElementById("dashboard");
   const applications = document.getElementById("applications");
   const logoutBtn = document.getElementById("logoutBtn");
+  const refreshBtn = document.getElementById("refreshBtn");
 
   function showMessage(text) {
     message.textContent = text;
@@ -119,10 +175,19 @@
   }
 
   async function verifyAdmin() {
-    const { data: sessionData } = await db.auth.getSession();
+    const { data: sessionData, error: sessionError } =
+      await db.auth.getSession();
+
+    if (sessionError) {
+      console.error("Session check failed:", sessionError.message);
+      return false;
+    }
+
     const user = sessionData.session?.user;
 
-    if (!user) return false;
+    if (!user) {
+      return false;
+    }
 
     const { data, error } = await db
       .from("jss_admins")
@@ -132,6 +197,7 @@
       .maybeSingle();
 
     if (error || !data) {
+      console.error("Admin verification failed:", error);
       await db.auth.signOut();
       return false;
     }
@@ -142,116 +208,232 @@
   async function loadApplications() {
     applications.replaceChildren();
     showMessage("Loading applications...");
+    refreshBtn.disabled = true;
 
-    const { data, error } = await db
-      .from("Members")
-      .select(
-        "id, full_name, father_name, village, phone, email, education, created_at, status, membership_number"
-      )
-      .eq("status", "pending")
+    try {
+      const { data, error } = await db
+        .from("Members")
+        .select(
+          "id, full_name, father_name, village, phone, email, education, status, membership_number"
+        )
+        .eq("status", "pending");
 
-    if (error) {
-      showMessage("Could not load applications: " + error.message);
-      return;
-    }
+      if (error) {
+        console.error("Load applications error:", error);
+        showMessage(
+          "Could not load applications: " + error.message
+        );
+        return;
+      }
 
-    showMessage("Pending applications: " + data.length);
+      showMessage("Pending applications: " + data.length);
 
-    if (data.length === 0) {
-      addText(applications, "p", "No pending applications.");
-      return;
-    }
+      if (data.length === 0) {
+        addText(
+          applications,
+          "p",
+          "No pending applications."
+        );
+        return;
+      }
 
-    for (const member of data) {
-      const card = document.createElement("article");
-      card.className = "application";
+      for (const member of data) {
+        const card = document.createElement("article");
+        card.className = "application";
 
-      addText(card, "h3", member.full_name || "Unnamed applicant");
-      addText(card, "p", "Father: " + (member.father_name || "—"));
-      addText(card, "p", "Village: " + (member.village || "—"));
-      addText(card, "p", "Phone: " + (member.phone || "—"));
-      addText(card, "p", "Email: " + (member.email || "—"));
-      addText(card, "p", "Education: " + (member.education || "—"));
-      addText(
-        card,
-        "p",
-        "Applied: " + new Date(member.created_at).toLocaleString()
-      );
-
-      const actions = document.createElement("div");
-      actions.className = "actions";
-
-      const approveBtn = document.createElement("button");
-      approveBtn.textContent = "Approve";
-      approveBtn.addEventListener("click", async () => {
-        if (!confirm("Approve this application and assign a membership number?")) {
-          return;
-        }
-
-        approveBtn.disabled = true;
-        showMessage("Approving application...");
-
-        const { data: number, error: approvalError } = await db.rpc(
-          "jss_approve_member",
-          { p_member_id: member.id }
+        addText(
+          card,
+          "h3",
+          member.full_name || "Unnamed applicant"
         );
 
-        if (approvalError) {
-          showMessage("Approval failed: " + approvalError.message);
-          approveBtn.disabled = false;
-          return;
-        }
+        addText(
+          card,
+          "p",
+          "Father: " + (member.father_name || "—")
+        );
 
-        showMessage("Approved successfully. Membership number: " + number);
-        await loadApplications();
-      });
+        addText(
+          card,
+          "p",
+          "Village: " + (member.village || "—")
+        );
 
-      const rejectBtn = document.createElement("button");
-      rejectBtn.textContent = "Reject";
-      rejectBtn.className = "reject";
+        addText(
+          card,
+          "p",
+          "Phone: " + (member.phone || "—")
+        );
 
-      rejectBtn.addEventListener("click", async () => {
-        if (!confirm("Are you sure you want to reject this application?")) {
-          return;
-        }
+        addText(
+          card,
+          "p",
+          "Email: " + (member.email || "—")
+        );
 
-        rejectBtn.disabled = true;
-        showMessage("Rejecting application...");
+        addText(
+          card,
+          "p",
+          "Education: " + (member.education || "—")
+        );
 
-        const { data: rejected, error: rejectError } = await db
-          .from("Members")
-          .update({
-            status: "rejected",
-            membership_number: null
-          })
-          .eq("id", member.id)
-          .eq("status", "pending")
-          .select("id");
+        addText(
+          card,
+          "p",
+          "Status: " + member.status
+        );
 
-        if (rejectError) {
-          showMessage("Rejection failed: " + rejectError.message);
-          rejectBtn.disabled = false;
-          return;
-        }
+        const actions = document.createElement("div");
+        actions.className = "actions";
 
-        if (!rejected || rejected.length === 0) {
-          showMessage("Application was not changed. Refresh and try again.");
-          rejectBtn.disabled = false;
-          return;
-        }
+        const approveBtn = document.createElement("button");
+        approveBtn.textContent = "Approve";
+        approveBtn.type = "button";
 
-        showMessage("Application rejected.");
-        await loadApplications();
-      });
+        approveBtn.addEventListener("click", async () => {
+          if (
+            !confirm(
+              "Approve this application and assign a membership number?"
+            )
+          ) {
+            return;
+          }
 
-      actions.append(approveBtn, rejectBtn);
-      card.appendChild(actions);
-      applications.appendChild(card);
+          approveBtn.disabled = true;
+          rejectBtn.disabled = true;
+          showMessage("Approving application...");
+
+          try {
+            const {
+              data: number,
+              error: approvalError
+            } = await db.rpc(
+              "jss_approve_member",
+              { p_member_id: member.id }
+            );
+
+            if (approvalError) {
+              console.error(
+                "Approval error:",
+                approvalError
+              );
+
+              showMessage(
+                "Approval failed: " + approvalError.message
+              );
+
+              approveBtn.disabled = false;
+              rejectBtn.disabled = false;
+              return;
+            }
+
+            showMessage(
+              "Approved successfully. Membership number: " + number
+            );
+
+            await loadApplications();
+
+          } catch (error) {
+            console.error("Approval error:", error);
+
+            showMessage(
+              "Approval failed. Please refresh and try again."
+            );
+
+            approveBtn.disabled = false;
+            rejectBtn.disabled = false;
+          }
+        });
+
+        const rejectBtn = document.createElement("button");
+        rejectBtn.textContent = "Reject";
+        rejectBtn.className = "reject";
+        rejectBtn.type = "button";
+
+        rejectBtn.addEventListener("click", async () => {
+          if (
+            !confirm(
+              "Are you sure you want to reject this application?"
+            )
+          ) {
+            return;
+          }
+
+          approveBtn.disabled = true;
+          rejectBtn.disabled = true;
+          showMessage("Rejecting application...");
+
+          try {
+            const {
+              data: rejected,
+              error: rejectError
+            } = await db
+              .from("Members")
+              .update({
+                status: "rejected",
+                membership_number: null
+              })
+              .eq("id", member.id)
+              .eq("status", "pending")
+              .select("id");
+
+            if (rejectError) {
+              console.error("Rejection error:", rejectError);
+
+              showMessage(
+                "Rejection failed: " + rejectError.message
+              );
+
+              approveBtn.disabled = false;
+              rejectBtn.disabled = false;
+              return;
+            }
+
+            if (!rejected || rejected.length === 0) {
+              showMessage(
+                "Application was not changed. Refresh and try again."
+              );
+
+              approveBtn.disabled = false;
+              rejectBtn.disabled = false;
+              return;
+            }
+
+            showMessage("Application rejected.");
+            await loadApplications();
+
+          } catch (error) {
+            console.error("Rejection error:", error);
+
+            showMessage(
+              "Rejection failed. Please refresh and try again."
+            );
+
+            approveBtn.disabled = false;
+            rejectBtn.disabled = false;
+          }
+        });
+
+        actions.append(approveBtn, rejectBtn);
+        card.appendChild(actions);
+        applications.appendChild(card);
+      }
+
+    } catch (error) {
+      console.error("Unexpected loading error:", error);
+
+      showMessage(
+        "Could not load applications. Please refresh and try again."
+      );
+
+    } finally {
+      refreshBtn.disabled = false;
     }
   }
 
   loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+
     showMessage("Signing in...");
 
     const { error } = await db.auth.signInWithPassword({
@@ -265,7 +447,9 @@
     }
 
     if (!(await verifyAdmin())) {
-      showMessage("Access denied. Active JSS admin account required.");
+      showMessage(
+        "Access denied. Active JSS admin account required."
+      );
       return;
     }
 
@@ -273,27 +457,42 @@
     await loadApplications();
   });
 
-  document.getElementById("refreshBtn").addEventListener(
-    "click", loadApplications
-  );
+  refreshBtn.addEventListener("click", loadApplications);
 
   logoutBtn.addEventListener("click", async () => {
     await db.auth.signOut();
+
     dashboard.classList.add("hidden");
     loginForm.classList.remove("hidden");
     logoutBtn.classList.add("hidden");
+
     applications.replaceChildren();
     showMessage("You have logged out.");
   });
 
-  // Restore an existing valid session if available.
+  // Restore an existing valid admin session.
   (async () => {
-    const { data } = await db.auth.getSession();
-    if (data.session && await verifyAdmin()) {
-      showDashboard();
-      await loadApplications();
+    try {
+      const { data, error } = await db.auth.getSession();
+
+      if (error) {
+        showMessage("Could not check login session.");
+        return;
+      }
+
+      if (data.session && await verifyAdmin()) {
+        showDashboard();
+        await loadApplications();
+      } else {
+        showMessage("Please sign in.");
+      }
+
+    } catch (error) {
+      console.error("Session restore error:", error);
+      showMessage("Please sign in to continue.");
     }
   })();
 </script>
+
 </body>
 </html>
