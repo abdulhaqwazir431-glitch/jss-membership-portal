@@ -1,0 +1,484 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JSS Digital Membership Cards</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      font-family: Arial, sans-serif;
+      background: #eef3f2;
+      color: #18352e;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .panel {
+      background: white;
+      padding: 22px;
+      border-radius: 14px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 14px #0000000d;
+    }
+
+    h1, h2 { color: #14532d; }
+
+    input, button {
+      padding: 12px;
+      border-radius: 7px;
+      font-size: 15px;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid #cbd5d1;
+      margin: 6px 0 12px;
+    }
+
+    button {
+      border: 0;
+      background: #166534;
+      color: white;
+      cursor: pointer;
+      margin: 5px 5px 5px 0;
+    }
+
+    button:disabled { opacity: .6; cursor: wait; }
+
+    .secondary { background: #475569; }
+    .hidden { display: none !important; }
+    #message { overflow-wrap: anywhere; }
+
+    .member-row {
+      padding: 14px 0;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .member-row p { margin: 5px 0; }
+
+    .card-wrap {
+      margin: 22px 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .membership-card {
+      width: 100%;
+      max-width: 600px;
+      min-height: 310px;
+      padding: 26px;
+      border-radius: 18px;
+      color: #fff;
+      background:
+        radial-gradient(circle at 95% 5%, #316d51 0, transparent 38%),
+        linear-gradient(135deg, #0b2f28, #124a36);
+      border: 2px solid #c9ac65;
+      box-shadow: 0 8px 24px #0002;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid #c9ac6580;
+    }
+
+    .logo {
+      width: 66px;
+      height: 66px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: #d8bd76;
+      color: #0b2f28;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 23px;
+      font-weight: 900;
+      border: 3px solid #f5e7b8;
+    }
+
+    .society-name {
+      font-size: 18px;
+      line-height: 1.4;
+      font-weight: bold;
+    }
+
+    .gold {
+      color: #e6cc86;
+      font-size: 11px;
+      letter-spacing: 2px;
+      margin-top: 5px;
+    }
+
+    .member-label {
+      color: #e6cc86;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      margin: 22px 0 6px;
+    }
+
+    .member-name {
+      font-size: 25px;
+      font-weight: bold;
+      overflow-wrap: anywhere;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .detail-value {
+      font-size: 14px;
+      margin-top: 7px;
+      overflow-wrap: anywhere;
+    }
+
+    .card-footer {
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid #c9ac6580;
+      color: #e6cc86;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+
+    .card-actions {
+      text-align: center;
+      margin: 12px 0 28px;
+    }
+
+    @media (max-width: 480px) {
+      .membership-card { padding: 18px; min-height: 290px; }
+      .logo { width: 54px; height: 54px; font-size: 19px; }
+      .society-name { font-size: 15px; }
+      .member-name { font-size: 21px; }
+      .details { gap: 10px; }
+    }
+
+    @media print {
+      @page {
+        size: landscape;
+        margin: 10mm;
+      }
+
+      body {
+        background: white;
+        padding: 0;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      body * { visibility: hidden !important; }
+
+      body.printing .membership-card,
+      body.printing .membership-card * {
+        visibility: visible !important;
+      }
+
+      body.printing .membership-card {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 85mm;
+        min-height: 54mm;
+        max-width: none;
+        border-radius: 3mm;
+        padding: 5mm;
+        box-shadow: none;
+      }
+
+      body.printing .card-header { gap: 3mm; padding-bottom: 3mm; }
+      body.printing .logo { width: 15mm; height: 15mm; font-size: 5mm; }
+      body.printing .society-name { font-size: 10pt; }
+      body.printing .gold { font-size: 6pt; }
+      body.printing .member-label { margin-top: 4mm; font-size: 6pt; }
+      body.printing .member-name { font-size: 15pt; }
+      body.printing .details { margin-top: 4mm; gap: 3mm; }
+      body.printing .detail-value { font-size: 8pt; }
+      body.printing .card-footer { margin-top: 4mm; padding-top: 2mm; font-size: 6pt; }
+
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <section class="panel no-print">
+    <h1>Janikhel Students Society</h1>
+    <h2>Digital Membership Cards</h2>
+    <p id="message" role="status" aria-live="polite">
+      Checking admin session...
+    </p>
+
+    <form id="loginForm" class="hidden">
+      <input id="email" type="email" placeholder="Admin email" required>
+      <input id="password" type="password" placeholder="Password" required>
+      <button type="submit">Admin Login</button>
+    </form>
+
+    <div id="toolbar" class="hidden">
+      <button id="refreshBtn" type="button">Refresh Approved Members</button>
+      <button id="logoutBtn" type="button" class="secondary">Logout</button>
+    </div>
+  </section>
+
+  <section id="membersPanel" class="panel no-print hidden">
+    <h2>Approved Members</h2>
+    <p>Select a member to view their digital membership card.</p>
+    <div id="membersList"></div>
+  </section>
+
+  <section id="cardPanel" class="panel hidden">
+    <h2 class="no-print">Membership Card Preview</h2>
+    <div id="cardContainer"></div>
+    <div class="card-actions no-print">
+      <button id="printBtn" type="button">Print / Save as PDF</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const SUPABASE_URL =
+    "https://irxaejcuwrpjithegxhy.supabase.co";
+
+  const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_8ZNlvAzSCooLCmv4GwGkWA_V-vtJl-R";
+
+  const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
+
+  const message = document.getElementById("message");
+  const loginForm = document.getElementById("loginForm");
+  const toolbar = document.getElementById("toolbar");
+  const membersPanel = document.getElementById("membersPanel");
+  const membersList = document.getElementById("membersList");
+  const cardPanel = document.getElementById("cardPanel");
+  const cardContainer = document.getElementById("cardContainer");
+
+  let selectedMember = null;
+
+  function showMessage(text) {
+    message.textContent = text;
+  }
+
+  function addText(parent, tag, text, className) {
+    const el = document.createElement(tag);
+    el.textContent = text || "";
+    if (className) el.className = className;
+    parent.appendChild(el);
+    return el;
+  }
+
+  async function verifyAdmin() {
+    const { data: sessionData, error: sessionError } =
+      await db.auth.getSession();
+
+    if (sessionError || !sessionData.session?.user) return false;
+
+    const { data, error } = await db
+      .from("jss_admins")
+      .select("active")
+      .eq("user_id", sessionData.session.user.id)
+      .eq("active", true)
+      .maybeSingle();
+
+    return !error && !!data;
+  }
+
+  function showAuthenticatedUI() {
+    loginForm.classList.add("hidden");
+    toolbar.classList.remove("hidden");
+    membersPanel.classList.remove("hidden");
+  }
+
+  async function loadApprovedMembers() {
+    membersList.replaceChildren();
+    cardPanel.classList.add("hidden");
+    showMessage("Loading approved members...");
+
+    const { data, error } = await db
+      .from("Members")
+      .select("id, full_name, village, status, membership_number")
+      .eq("status", "approved")
+      .not("membership_number", "is", null)
+      .order("membership_number", { ascending: true });
+
+    if (error) {
+      console.error("Approved members error:", error);
+      showMessage("Could not load members: " + error.message);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      showMessage("No approved members with membership numbers found.");
+      return;
+    }
+
+    showMessage("Approved members found: " + data.length);
+
+    for (const member of data) {
+      const row = document.createElement("div");
+      row.className = "member-row";
+
+      const info = document.createElement("div");
+      addText(info, "strong", member.full_name || "Unnamed member");
+      addText(info, "p", "Village: " + (member.village || "—"));
+      addText(info, "p", "Membership No: " + member.membership_number);
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "View Card";
+
+      button.addEventListener("click", () => {
+        showMembershipCard(member);
+      });
+
+      row.append(info, button);
+      membersList.appendChild(row);
+    }
+  }
+
+  function showMembershipCard(member) {
+    selectedMember = member;
+    cardContainer.replaceChildren();
+
+    const card = document.createElement("div");
+    card.className = "membership-card";
+
+    const header = document.createElement("div");
+    header.className = "card-header";
+
+    addText(header, "div", "JSS", "logo");
+
+    const titleBox = document.createElement("div");
+    addText(titleBox, "div", "JANIKHEL STUDENTS SOCIETY", "society-name");
+    addText(titleBox, "div", "DIGITAL MEMBERSHIP CARD", "gold");
+
+    header.appendChild(titleBox);
+    card.appendChild(header);
+
+    addText(card, "div", "MEMBER NAME", "member-label");
+    addText(card, "div", member.full_name || "—", "member-name");
+
+    const details = document.createElement("div");
+    details.className = "details";
+
+    const villageBox = document.createElement("div");
+    addText(villageBox, "div", "VILLAGE", "gold");
+    addText(villageBox, "div", member.village || "—", "detail-value");
+
+    const numberBox = document.createElement("div");
+    addText(numberBox, "div", "MEMBERSHIP NUMBER", "gold");
+    addText(numberBox, "div", member.membership_number || "—", "detail-value");
+
+    details.append(villageBox, numberBox);
+    card.appendChild(details);
+
+    addText(card, "div", "EDUCATION  •  UNITY  •  SERVICE", "card-footer");
+
+    cardContainer.appendChild(card);
+    cardPanel.classList.remove("hidden");
+    cardPanel.scrollIntoView({ behavior: "smooth" });
+  }
+
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    showMessage("Signing in...");
+
+    const { error } = await db.auth.signInWithPassword({
+      email: document.getElementById("email").value.trim(),
+      password: document.getElementById("password").value
+    });
+
+    if (error) {
+      showMessage("Login failed: " + error.message);
+      return;
+    }
+
+    if (!(await verifyAdmin())) {
+      await db.auth.signOut();
+      showMessage("Access denied. An active JSS admin account is required.");
+      loginForm.classList.remove("hidden");
+      toolbar.classList.add("hidden");
+      membersPanel.classList.add("hidden");
+      return;
+    }
+
+    showAuthenticatedUI();
+    await loadApprovedMembers();
+  });
+
+  document.getElementById("refreshBtn").addEventListener(
+    "click",
+    loadApprovedMembers
+  );
+
+  document.getElementById("printBtn").addEventListener("click", () => {
+    if (!selectedMember) return;
+
+    document.body.classList.add("printing");
+
+    window.print();
+  });
+
+  window.addEventListener("afterprint", () => {
+    document.body.classList.remove("printing");
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    await db.auth.signOut();
+    selectedMember = null;
+    membersList.replaceChildren();
+    cardContainer.replaceChildren();
+    cardPanel.classList.add("hidden");
+    membersPanel.classList.add("hidden");
+    toolbar.classList.add("hidden");
+    loginForm.classList.remove("hidden");
+    showMessage("You have logged out.");
+  });
+
+  (async () => {
+    try {
+      if (await verifyAdmin()) {
+        showAuthenticatedUI();
+        await loadApprovedMembers();
+      } else {
+        loginForm.classList.remove("hidden");
+        showMessage("Please sign in with your JSS admin account.");
+      }
+    } catch (error) {
+      console.error(error);
+      loginForm.classList.remove("hidden");
+      showMessage("Could not verify the session. Please log in.");
+    }
+  })();
+</script>
+</body>
+</html>
