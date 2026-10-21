@@ -5,7 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>JSS Digital Membership Cards</title>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <style>
     * { box-sizing: border-box; }
@@ -18,10 +20,7 @@
       color: #18352e;
     }
 
-    .container {
-      max-width: 900px;
-      margin: auto;
-    }
+    .container { max-width: 900px; margin: auto; }
 
     .panel {
       background: white;
@@ -54,7 +53,6 @@
     }
 
     button:disabled { opacity: .6; cursor: wait; }
-
     .secondary { background: #475569; }
     .hidden { display: none !important; }
     #message { overflow-wrap: anywhere; }
@@ -96,17 +94,26 @@
     .card-header {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       padding-bottom: 18px;
       border-bottom: 1px solid #c9ac6580;
     }
 
     .logo-fallback {
-      width: 82px; height: 82px; flex-shrink: 0; border-radius: 50%;
-      background: #d8bd76; color: #0b2f28; display: flex;
-      align-items: center; justify-content: center; font-size: 23px; font-weight: 900;
+      width: 82px;
+      height: 82px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: #d8bd76;
+      color: #0b2f28;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 23px;
+      font-weight: 900;
       border: 3px solid #e6cc86;
     }
+
     .logo {
       width: 82px;
       height: 82px;
@@ -117,39 +124,10 @@
       border: 3px solid #e6cc86;
       padding: 2px;
     }
-    .date-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-top: 18px;
-    }
-    .signature-area {
-      display: flex;
-      justify-content: flex-end;
-      align-items: end;
-      margin-top: 16px;
-      padding-top: 8px;
-    }
-    .signature-block {
-      width: 180px;
-      text-align: center;
-      color: #fff;
-      font-size: 11px;
-    }
-    .signature-image {
-      display: block;
-      width: 125px;
-      height: 42px;
-      object-fit: contain;
-      margin: 0 auto 3px;
-      background: #fff;
-      border-radius: 4px;
-      padding: 2px;
-    }
-    .signature-caption {
-      border-top: 1px solid #e6cc86;
-      padding-top: 5px;
-      color: #e6cc86;
+
+    .title-box {
+      flex: 1;
+      min-width: 0;
     }
 
     .society-name {
@@ -161,8 +139,41 @@
     .gold {
       color: #e6cc86;
       font-size: 11px;
-      letter-spacing: 2px;
+      letter-spacing: 1.5px;
       margin-top: 5px;
+    }
+
+    .qr-code-wrap {
+      flex-shrink: 0;
+      width: 76px;
+      text-align: center;
+      color: #fff;
+      font-size: 8px;
+    }
+
+    .qr-code-box {
+      width: 68px;
+      height: 68px;
+      padding: 3px;
+      margin: auto;
+      background: #fff;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-code-box img,
+    .qr-code-box canvas {
+      display: block;
+      width: 62px !important;
+      height: 62px !important;
+    }
+
+    .qr-caption {
+      margin-top: 4px;
+      color: #e6cc86;
+      line-height: 1.3;
     }
 
     .member-label {
@@ -191,6 +202,45 @@
       overflow-wrap: anywhere;
     }
 
+    .date-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .signature-area {
+      display: flex;
+      justify-content: flex-end;
+      align-items: end;
+      margin-top: 16px;
+      padding-top: 8px;
+    }
+
+    .signature-block {
+      width: 180px;
+      text-align: center;
+      color: #fff;
+      font-size: 11px;
+    }
+
+    .signature-image {
+      display: block;
+      width: 125px;
+      height: 42px;
+      object-fit: contain;
+      margin: 0 auto 3px;
+      background: #fff;
+      border-radius: 4px;
+      padding: 2px;
+    }
+
+    .signature-caption {
+      border-top: 1px solid #e6cc86;
+      padding-top: 5px;
+      color: #e6cc86;
+    }
+
     .card-footer {
       margin-top: 24px;
       padding-top: 12px;
@@ -206,9 +256,21 @@
     }
 
     @media (max-width: 480px) {
-      .membership-card { padding: 18px; min-height: 290px; }
-      .logo { width: 58px; height: 58px; }
-      .society-name { font-size: 15px; }
+      body { padding: 12px 8px; }
+      .panel { padding: 15px; }
+      .membership-card { padding: 14px; min-height: 290px; }
+      .logo { width: 52px; height: 52px; }
+      .logo-fallback { width: 52px; height: 52px; font-size: 17px; }
+      .card-header { gap: 7px; }
+      .society-name { font-size: 12px; }
+      .gold { font-size: 9px; letter-spacing: 1px; }
+      .qr-code-wrap { width: 60px; font-size: 7px; }
+      .qr-code-box { width: 56px; height: 56px; }
+      .qr-code-box img,
+      .qr-code-box canvas {
+        width: 50px !important;
+        height: 50px !important;
+      }
       .member-name { font-size: 21px; }
       .details { gap: 10px; }
       .date-row { gap: 10px; }
@@ -244,24 +306,37 @@
         min-height: 54mm;
         max-width: none;
         border-radius: 3mm;
-        padding: 5mm;
+        padding: 4mm;
         box-shadow: none;
       }
 
-      body.printing .card-header { gap: 3mm; padding-bottom: 3mm; }
-      body.printing .logo { width: 17mm; height: 17mm; padding: 1mm; }
-      body.printing .date-row { margin-top: 3mm; gap: 3mm; }
-      body.printing .signature-area { margin-top: 3mm; padding-top: 1mm; }
-      body.printing .signature-block { width: 38mm; font-size: 6pt; }
-      body.printing .signature-image { width: 27mm; height: 9mm; }
+      body.printing .card-header { gap: 2mm; padding-bottom: 2mm; }
+      body.printing .logo,
+      body.printing .logo-fallback {
+        width: 15mm;
+        height: 15mm;
+      }
+
+      body.printing .society-name { font-size: 9pt; }
+      body.printing .gold { font-size: 5.5pt; }
+      body.printing .qr-code-wrap { width: 15mm; font-size: 5pt; }
+      body.printing .qr-code-box { width: 13mm; height: 13mm; padding: .5mm; }
+      body.printing .qr-code-box img,
+      body.printing .qr-code-box canvas {
+        width: 12mm !important;
+        height: 12mm !important;
+      }
+
+      body.printing .member-label { margin-top: 3mm; font-size: 5.5pt; }
+      body.printing .member-name { font-size: 13pt; }
+      body.printing .details { margin-top: 3mm; gap: 2mm; }
+      body.printing .detail-value { font-size: 7pt; margin-top: 1mm; }
+      body.printing .date-row { margin-top: 2mm; gap: 2mm; }
+      body.printing .signature-area { margin-top: 2mm; padding-top: 1mm; }
+      body.printing .signature-block { width: 30mm; font-size: 5.5pt; }
+      body.printing .signature-image { width: 22mm; height: 7mm; }
       body.printing .signature-caption { padding-top: 1mm; }
-      body.printing .society-name { font-size: 10pt; }
-      body.printing .gold { font-size: 6pt; }
-      body.printing .member-label { margin-top: 4mm; font-size: 6pt; }
-      body.printing .member-name { font-size: 15pt; }
-      body.printing .details { margin-top: 4mm; gap: 3mm; }
-      body.printing .detail-value { font-size: 8pt; }
-      body.printing .card-footer { margin-top: 4mm; padding-top: 2mm; font-size: 6pt; }
+      body.printing .card-footer { margin-top: 2mm; padding-top: 1mm; font-size: 5pt; }
 
       .no-print { display: none !important; }
     }
@@ -364,7 +439,9 @@
 
   async function loadApprovedMembers() {
     membersList.replaceChildren();
+    cardContainer.replaceChildren();
     cardPanel.classList.add("hidden");
+    selectedMember = null;
     showMessage("Loading approved members...");
 
     const { data, error } = await db
@@ -421,19 +498,53 @@
 
     const logo = document.createElement("img");
     logo.className = "logo";
+
+    // These filenames must match the files in the GitHub repository.
     logo.src = "jss-logo.png.jpeg";
     logo.alt = "Janikhel Students Society logo";
+
     logo.onerror = () => {
       logo.remove();
       addText(header, "div", "JSS", "logo-fallback");
     };
+
     header.appendChild(logo);
 
     const titleBox = document.createElement("div");
+    titleBox.className = "title-box";
     addText(titleBox, "div", "JANIKHEL STUDENTS SOCIETY", "society-name");
     addText(titleBox, "div", "DIGITAL MEMBERSHIP CARD", "gold");
 
     header.appendChild(titleBox);
+
+    // Create this member's unique QR code.
+    const qrWrap = document.createElement("div");
+    qrWrap.className = "qr-code-wrap";
+
+    const qrBox = document.createElement("div");
+    qrBox.className = "qr-code-box";
+
+    const qrCaption = document.createElement("div");
+    qrCaption.className = "qr-caption";
+    qrCaption.textContent = "SCAN TO VERIFY";
+
+    if (member.membership_number && window.QRCode) {
+      const verifyURL =
+        "https://abdulhaqwazir431-glitch.github.io/jss-membership-portal/verify.html?number=" +
+        encodeURIComponent(member.membership_number);
+
+      new QRCode(qrBox, {
+        text: verifyURL,
+        width: 100,
+        height: 100,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } else {
+      qrBox.textContent = "QR unavailable";
+    }
+
+    qrWrap.append(qrBox, qrCaption);
+    header.appendChild(qrWrap);
     card.appendChild(header);
 
     addText(card, "div", "MEMBER NAME", "member-label");
@@ -464,32 +575,44 @@
     const issueDate = new Date();
     const expiryDate = new Date(issueDate);
     expiryDate.setFullYear(expiryDate.getFullYear() + 2);
+
     const formatDate = (date) => date.toLocaleDateString("en-GB", {
-      day: "2-digit", month: "short", year: "numeric"
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
     });
 
     const dateRow = document.createElement("div");
     dateRow.className = "date-row";
+
     const issueBox = document.createElement("div");
     addText(issueBox, "div", "ISSUE DATE", "gold");
     addText(issueBox, "div", formatDate(issueDate), "detail-value");
+
     const expiryBox = document.createElement("div");
     addText(expiryBox, "div", "EXPIRY DATE", "gold");
     addText(expiryBox, "div", formatDate(expiryDate), "detail-value");
+
     dateRow.append(issueBox, expiryBox);
     card.appendChild(dateRow);
 
     const signatureArea = document.createElement("div");
     signatureArea.className = "signature-area";
+
     const signatureBlock = document.createElement("div");
     signatureBlock.className = "signature-block";
+
     const signature = document.createElement("img");
     signature.className = "signature-image";
     signature.src = "issuing-signature.png.jpeg";
     signature.alt = "Issuing authority signature";
-    signature.onerror = () => { signature.style.display = "none"; };
+    signature.onerror = () => {
+      signature.style.display = "none";
+    };
+
     signatureBlock.appendChild(signature);
     addText(signatureBlock, "div", "Issuing Authority", "signature-caption");
+
     signatureArea.appendChild(signatureBlock);
     card.appendChild(signatureArea);
 
@@ -536,7 +659,6 @@
     if (!selectedMember) return;
 
     document.body.classList.add("printing");
-
     window.print();
   });
 
